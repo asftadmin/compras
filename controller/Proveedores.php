@@ -150,192 +150,123 @@ switch ($_GET['op']) {
         break;
 
 
-    case 'consultarProveedores':
-        $datos = $proveedores->get_prov();
-        $data = array();
-        foreach ($datos as $row) {
-
-            $sub_array = array();
-            $sub_array[] = $row["prov_nit"];
-            $sub_array[] = $row["prov_descripcion"];
-            $sub_array[] = $row["prov_cod_siesa"];
-            $data[] = $sub_array;
-        }
-
-
-        $resultado = array(
-            "sEcho" => 1,
-            "iTotalRecords" => count($data),
-            "iTotalDisplayRecords" => count($data),
-            "aaData" => $data
-        );
-        echo json_encode($resultado);
-
-        break;
-
-    case "guardarProveedorNuevo":
-
-        $nit = $_POST["nit"];
-        $descrip = $_POST["razon_social"];
-
-        $resultado = $proveedores->insertarProvNuevo([
-            'prov_nit' => $nit,
-            'prov_descripcion' => $descrip,
-        ]);
-
-        echo json_encode(["success" => $resultado]);
-        break;
-
-
     case 'comprasPorLinea':
         header('Content-Type: application/json');
         ob_start();
 
         try {
             $linea_id = $_POST['linea_id'] ?? null;
-            $anio = $_POST['año'] ?? 2025;
+            $anio     = $_POST['año'] ?? 2025;
 
             if (!$linea_id) {
                 throw new Exception('ID de línea no proporcionado');
             }
 
-            // Obtener proveedores con código SIESA
-            $proveedor = $proveedores->get_by_linea_con_siesa($linea_id);
+            $proveedor     = $proveedores->get_by_linea_con_siesa($linea_id);
             $codigos_siesa = array_unique(array_map('intval', array_column($proveedor, 'prov_cod_siesa')));
 
             if (empty($codigos_siesa)) {
                 throw new Exception('No hay proveedores con códigos SIESA');
             }
 
-            $totales = [];
-            $lineas_sumadas = [];
+            $totales       = [];
+            $detalle_items = [];
 
-            $fecha_inicio = $_POST['fecha_inicio'] ?? date('Y-01-01'); // Default: inicio de año actual
-            $fecha_fin = $_POST['fecha_fin'] ?? date('Y-12-31');
+            $fecha_inicio = $_POST['fecha_inicio'] ?? date('Y-01-01');
+            $fecha_fin    = $_POST['fecha_fin']    ?? date('Y-12-31');
+
+            // Mapa de codigo => nombre proveedor para usarlo dentro del loop
+            $mapa_proveedores = [];
+            foreach ($proveedor as $prov) {
+                $mapa_proveedores[(int)$prov['prov_cod_siesa']] = $prov['prov_descripcion'];
+            }
 
             foreach ($codigos_siesa as $proveedor_codigo) {
                 $proveedor_codigo = (int) $proveedor_codigo;
-
-                $pagina_actual = 1;
-                $total_paginas_proveedor = 0;
-                $total_registros_proveedor = 0;
+                $pagina_actual    = 1;
 
                 while (true) {
-                    // Construir URL para esta página y proveedor
-                    $url = "idCompania=6026";
+                    $url  = "idCompania=6026";
                     $url .= "&descripcion=asfaltart_t350_docto_contable_entradas";
                     $url .= "&paginacion=numPag={$pagina_actual}|tamPag=100";
                     $url .= "&parametros=fechainicio={$fecha_inicio}|fechafin={$fecha_fin}|proveedor={$proveedor_codigo}";
 
-                    //file_put_contents('debug_urls.log', "Página {$pagina_actual} | Proveedor {$proveedor_codigo} | URL: {$url}\n", FILE_APPEND);
+                    $response = CurlController::requestEstandarV2($url, 'GET');
 
-                    $response = CurlController::requestEstandar($url, 'GET');
-
-                    // Log: guardar la respuesta completa aunque sea inválida
-                    //$log_filename = "debug_respuesta_pagina_{$anio}_proveedor_{$proveedor_codigo}.log";
-                    /*file_put_contents(
-                        $log_filename,
-                        "Página {$pagina_actual}\n" . json_encode($response, JSON_PRETTY_PRINT) . "\n\n",
-                        FILE_APPEND
-                    );*/
-
-                    if (!$response) {
-                        //file_put_contents('debug_errores_api.log', "Error: Respuesta nula para proveedor {$proveedor_codigo} en página {$pagina_actual}\n", FILE_APPEND);
-                        break; // Saltar a siguiente proveedor
+                    if (!$response || !isset($response->detalle->Datos)) {
+                        break;
                     }
 
-                    if (!isset($response->detalle) || !isset($response->detalle->Datos)) {
-                        //file_put_contents('debug_errores_api.log', "Error: Nodo Datos no encontrado para proveedor {$proveedor_codigo} en página {$pagina_actual}\n", FILE_APPEND);
-                        break; // Saltar a siguiente proveedor
-                    }
-
-                    $datos = $response->detalle->Datos;
+                    $datos               = $response->detalle->Datos;
                     $registros_recibidos = count($datos);
 
-                    /*file_put_contents(
-                        'debug_total_datos.log',
-                        "Página {$pagina_actual} | Proveedor {$proveedor_codigo} - Registros recibidos: {$registros_recibidos}\n",
-                        FILE_APPEND
-                    );*/
-
-                    $total_paginas_proveedor++;
-                    $total_registros_proveedor += $registros_recibidos;
-
                     foreach ($datos as $compra) {
-                        $rowid_tercero = $compra->f350_rowid_tercero ?? null;
-                        $tipo_doc_entrada = $compra->f350_id_tipo_docto ?? 'N/A';
-                        $consec_doc_entrada = $compra->f350_consec_docto ?? 'N/A';
-                        $vlr_neto = $compra->f451_vlr_neto ?? 0;
-                        $rowid_compra = $compra->f451_rowid_docto ?? null;
-                        $estado_doc = $compra->f054_id ?? null;
-                        $centro_operacion = $compra->f350_id_co ?? null;
+                        $rowid_tercero  = $compra->f350_rowid_tercero ?? null;
+                        $estado_doc     = $compra->f054_id ?? null;
+                        $vlr_neto_item  = (float)($compra->f470_vlr_neto  ?? 0);
+                        $vlr_bruto_item = (float)($compra->f470_vlr_bruto ?? 0);
+                        $cant           = (float)($compra->f470_cant_1    ?? 0);
+                        $referencia     = $compra->f120_referencia  ?? 'SIN REF';
+                        $descripcion    = $compra->f120_descripcion ?? 'SIN DESC';
 
-                        //file_put_contents('debug_pre_filtro_estado.log', "RowID: {$rowid_compra} | Estado: {$estado_doc}\n", FILE_APPEND);
+                        // Excluir estados 0 y 2
+                        if (in_array($estado_doc, [0, 2])) continue;
 
+                        // Solo ítems con valor
+                        if ($vlr_neto_item <= 0) continue;
 
-                        // Excluir documentos con estado 0 o 2
-                        if (in_array($estado_doc, [0, 2])) {
-                            //file_put_contents('debug_documentos_excluidos.log', "EXCLUIDO: RowIDCompra {$rowid_compra} | Estado: {$estado_doc}\n", FILE_APPEND);
-                            continue;
+                        // ✅ Acumular total por proveedor (para el gráfico)
+                        $totales[$rowid_tercero] = ($totales[$rowid_tercero] ?? 0) + $vlr_neto_item;
+
+                        // ✅ Acumular detalle agrupado por proveedor + ítem (para la tabla)
+                        $key_item = $rowid_tercero . '_' . $referencia;
+                        if (!isset($detalle_items[$key_item])) {
+                            $detalle_items[$key_item] = [
+                                'rowid_tercero' => $rowid_tercero,
+                                'proveedor'     => $mapa_proveedores[$proveedor_codigo] ?? 'SIN NOMBRE',
+                                'referencia'    => $referencia,
+                                'descripcion'   => $descripcion,
+                                'cantidad'      => 0,
+                                'vlr_bruto'     => 0,
+                                'vlr_neto'      => 0,
+                            ];
                         }
-
-                        // Usar f451_rowid_docto como clave única
-                        $clave_unica = $rowid_compra;
-
-                        //file_put_contents('debug_pre_clave_unica.log', "Clave: {$clave_unica} | RowIDCompra: {$rowid_compra} | Valor: {$vlr_neto}\n", FILE_APPEND);
-
-
-                        if (!isset($lineas_sumadas[$clave_unica])) {
-                            $totales[$rowid_tercero] = ($totales[$rowid_tercero] ?? 0) + $vlr_neto;
-                            $lineas_sumadas[$clave_unica] = true;
-
-                            // Log de compras válidas
-                            /*$log_linea = "ProveedorRowID: {$rowid_tercero} | CO: {$centro_operacion} | TipoDocEntrada: {$tipo_doc_entrada} | ConsecDocEntrada: {$consec_doc_entrada} | Valor: {$vlr_neto}\n";
-                            file_put_contents('debug_compras_validas.log', $log_linea, FILE_APPEND);*/
-                        }
+                        $detalle_items[$key_item]['cantidad']  += $cant;
+                        $detalle_items[$key_item]['vlr_bruto'] += $vlr_bruto_item;
+                        $detalle_items[$key_item]['vlr_neto']  += $vlr_neto_item;
                     }
 
-                    // 🚨 Si la API devuelve menos de 100 registros, asumimos última página
                     if ($registros_recibidos < 100) {
                         break;
                     }
 
                     $pagina_actual++;
                 }
-
-                // Log resumen por proveedor
-                /*file_put_contents(
-                    'debug_resumen_proveedor.log',
-                    "Proveedor {$proveedor_codigo} | Total páginas: {$total_paginas_proveedor} | Total registros: {$total_registros_proveedor}\n",
-                    FILE_APPEND
-                );*/
             }
 
-            // Log final
-            //file_put_contents('debug_totales_final.log', print_r($totales, true));
-
-            // Preparar datos para la respuesta
-            $labels = [];
+            // Preparar datos para el gráfico
+            $labels  = [];
             $valores = [];
 
             foreach ($proveedor as $prov) {
-                $codigo = (int)$prov['prov_cod_siesa'];
-                $labels[] = $prov['prov_descripcion'];
-                $valores[] = $totales[$codigo] ?? 0;
+                $codigo    = (int)$prov['prov_cod_siesa'];
+                $labels[]  = $prov['prov_descripcion'];
+                $valores[] = round($totales[$codigo] ?? 0, 2);
             }
 
             ob_end_clean();
             echo json_encode([
                 'success' => true,
-                'data' => [
-                    'labels' => $labels,
+                'data'    => [
+                    'labels'   => $labels,
                     'datasets' => [[
-                        'label' => "Compras {$anio}",
-                        'data' => $valores,
+                        'label'           => "Compras {$anio}",
+                        'data'            => $valores,
                         'backgroundColor' => array_map(function () {
                             return 'rgba(' . rand(50, 200) . ',' . rand(50, 200) . ',' . rand(50, 200) . ',0.7)';
                         }, $labels)
-                    ]]
+                    ]],
+                    'detalle' => array_values($detalle_items)
                 ]
             ]);
         } catch (Exception $e) {
@@ -343,7 +274,7 @@ switch ($_GET['op']) {
             echo json_encode([
                 'success' => false,
                 'message' => $e->getMessage(),
-                'data' => null
+                'data'    => null
             ]);
         }
         break;

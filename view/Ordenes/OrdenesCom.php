@@ -68,6 +68,7 @@ if (isset($_SESSION["user_id"])) {
                             </p>
                             <canvas id="graficoCompras" style="display:none; max-height:300px;"></canvas>
                         </div>
+                        <div id="contenedor-tabla-items"></div>
 
 
                     </div>
