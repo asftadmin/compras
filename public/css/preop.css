@@ -1,0 +1,227 @@
+.bodyPreop {
+    background-color: #f2f1f0;
+    color: #222;
+}
+
+
+.card-body  {
+    margin: 0 auto; /* Centra el formulario en la página */
+    background-color: #fff;
+    min-height: 660px;
+}
+
+.card-header  {
+   font-size: 14px;
+}
+
+.form-group label{
+    width: 100%;
+    max-width: 80px;
+}
+.form-group .soat{
+    width: 100%;
+    max-width: 150px;
+}
+
+.form-group input{
+    width: 100%;
+    max-width: 200px;
+}
+
+
+
+#formulario_preop {
+     width: 100%; /* Ocupará todo el ancho disponible en su contenedor */
+     max-width: 950px; /* Establece un ancho máximo para evitar que sea demasiado ancho en pantallas grandes */
+      margin: 0 auto; /* Centra el formulario en la página */
+      padding: 1px;
+      border: none;
+      max-height: 1400px;
+    }
+    
+    
+    /* Estilo para pantallas grandes */
+    @media (min-width: 1200px) {
+        #formulario_preop {
+            max-width: 1700px; /* Establece un ancho máximo para pantallas grandes */
+        }
+    }
+    
+    /* Estilo para pantallas pequeñas */
+    @media (max-width: 767px) {
+        #formulario_preop {
+            padding: 10px; /* Ajusta el espaciado interno para pantallas pequeñas */
+        }
+    }
+    #pregunta-container {
+      max-height: 580px;
+      overflow-y: auto; 
+      border: 1px solid #ccc; 
+      padding: 10px;
+      border: none;
+    }
+
+
+    #formulario_fallas {
+        width: 100%; /* Ocupará todo el ancho disponible en su contenedor */
+        max-width: 950px; /* Establece un ancho máximo para evitar que sea demasiado ancho en pantallas grandes */
+         margin: 0 auto; /* Centra el formulario en la página */
+         padding: 1px;
+         border: none;
+         max-height: 1400px;
+       }
+       
+       
+       /* Estilo para pantallas grandes */
+       @media (min-width: 120px) {
+           #formulario_fallas {
+               max-width: 1700px; /* Establece un ancho máximo para pantallas grandes */
+           }
+       }
+       
+       /* Estilo para pantallas pequeñas */
+       @media (max-width: 767px) {
+           #formulario_fallas {
+               padding: 10px; /* Ajusta el espaciado interno para pantallas pequeñas */
+               overflow-y: auto;
+           }
+       }
+       #form_fallas {
+         max-height: 350px;
+         overflow-y: auto; 
+         border: 1px solid #ccc; 
+         padding: 10px;
+         border: none;
+         overflow-y: auto;
+       }
+/* Estilo para pantallas más grandes */
+@media (min-width: 1200px) {
+    .card-body {
+        width: 100%; /* Ocupará todo el ancho disponible */
+        max-width: 1200px; /* Establece un ancho máximo */
+    }
+}
+
+/* Estilo para pantallas medianas */
+@media (max-width: 1199px) {
+    .card-body {
+        width: 90%; /* Ocupará el 90% del ancho disponible */
+        max-width: 1600px; /* Establece un ancho máximo */
+        overflow-y: auto;
+    }
+}
+
+/* Estilo para pantallas pequeñas */
+@media (max-width: 767px) {
+    .card-body {
+        width: 100%; /* Ocupará todo el ancho disponible */
+        max-width: none; /* No se establece un ancho máximo */
+        padding: 15px; /* Añade espacio alrededor del contenido */
+        overflow-y: auto;
+    }
+}
+
+/* Estilo para los radio buttons personalizados */
+
+label.radio-label {
+    display: inline-block;
+    width: 3rem;
+    height: 3rem;
+    padding: 12px 0px;
+    margin: 0 5px;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    background-color: #f2f2f2; /* Color de fondo de los radio buttons */
+    border: 1px solid #ccc; /* Borde de los radio buttons */
+    border-radius: 50%;
+}
+
+/* Estilo para los radio buttons ocultos */
+input[type="radio"] {
+    display: none;
+}
+
+label.radio-label:hover {
+    background-color: #009BA9;
+    color:#fff;
+}
+
+/* Estilo para los radio buttons cuando están seleccionados */
+input[type="radio"]:checked + label.radio-label {
+    background-color: #009BA9; /* Color de fondo cuando está seleccionado */
+    color: #fff; /* Color del texto cuando está seleccionado */
+    border: 1px solid #009BA9; /* Borde cuando está seleccionado */
+}
+
+.btn-info {
+    width: 100%; /* Ocupará todo el ancho disponible en su contenedor */
+    max-width: 200px; /* Establece un ancho máximo para evitar que sea demasiado ancho en pantallas grandes */
+    color: #fff;
+    background-color: #009BA9;
+    margin: 0 auto; /* Centra horizontalmente el botón en su contenedor */
+    padding: 10px 10px; /* Añade espaciado interno al botón para una mejor apariencia */
+}
+.btn-secondary {
+    width: 100%; /* Ocupará todo el ancho disponible en su contenedor */
+    max-width: 210px; /* Establece un ancho máximo para evitar que sea demasiado ancho en pantallas grandes */
+    color: #fff;
+    background-color: #8a8d8d;
+    margin: 0 auto; /* Centra horizontalmente el botón en su contenedor */
+    padding: 10px 10px; /* Añade espaciado interno al botón para una mejor apariencia */
+}
+
+.btn-sussec {
+    width: 100%; /* Ocupará todo el ancho disponible en su contenedor */
+    max-width: 200px; /* Establece un ancho máximo para evitar que sea demasiado ancho en pantallas grandes */
+    color: #eae1e1;
+    background-color: #09aa41;
+    margin: 0 auto; /* Centra horizontalmente el botón en su contenedor */
+    padding: 10px 10px; /* Añade espaciado interno al botón para una mejor apariencia */ 
+}
+
+.btn-fin {
+    width: 100%; /* Ocupará todo el ancho disponible en su contenedor */
+    max-width: 200px; /* Establece un ancho máximo para evitar que sea demasiado ancho en pantallas grandes */
+    color: #eae1e1;
+    background-color: #db1414;
+    margin: 0 auto; /* Centra horizontalmente el botón en su contenedor */
+    padding: 10px 10px; /* Añade espaciado interno al botón para una mejor apariencia */
+    
+}
+
+.btn.btn-info:hover{
+    opacity: 0.9;
+    background-color: #08b3c2 !important;
+    color: #fff !important;
+}
+
+.form {
+    flex-grow: 1;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 10px;
+    max-width: 300px;
+}
+
+.textarea{
+    flex-grow: 1;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    max-width: 800px;
+}
+
+.form-group .select2-container--default .select2-selection--single {
+    height: 38px;
+    line-height: 38px;
+    padding: 5px 10px;
+    background-color: #fff;  /* Cambia el color de fondo */
+    border-radius: 4px;  /* Añade borde redondeado */
+    border: 1px solid #ccc; /* Borde del select */
+}
+.dataTables_empty {
+    display: none;
+  }
+  

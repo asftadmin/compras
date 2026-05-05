@@ -1,0 +1,65 @@
+
+body {
+    font-family: 'Poppins', 'Times New Roman', Helvetica, sans-serif;
+
+  }
+
+.main-sidebar{
+    height: 100%;
+    width: 250px; 
+    background-color: #009BA9;
+}
+
+.image img{
+    padding: 2px; 
+    display: inline-block;
+    width: 100%; 
+    height: 100%; 
+    margin-left: -3px;
+} 
+
+.info a{
+    font-size: 15px;
+}
+
+.nav-item p{
+    color:white;
+    font-family: 'Poppins', Arial, Helvetica, sans-serif;
+}
+
+.nav-item p:hover{
+    color:rgba(228, 225, 225, 0.709);
+    font-family: 'Poppins', Arial, Helvetica, sans-serif;
+}
+
+i.nav-icon{
+    color:hsl(120, 3%, 6%);
+}
+
+.modal-footer{
+    display: flex;
+    justify-content:center;
+   
+}
+
+.modal-footer .btn {
+    width: 30%;
+}
+
+.select2-container .select2-selection--single {
+    height: 40px; /* Ajusta la altura */
+}
+/* Cambiar el color del icono para los submenús específicos (por ejemplo, Consultas) */
+.nav-item .nav-treeview .nav-link .nav-icon {
+    color: white; /* Color blanco */
+}
+
+/* Asegurarte de que los iconos de la "Consulta" se mantengan blancos al pasar el ratón (hover) */
+.nav-item .nav-treeview .nav-link:hover .nav-icon {
+    color: white; /* Asegura que el icono se mantenga blanco incluso al pasar el mouse */
+}
+.btn-orange {
+    background-color: rgb(232, 119, 6) !important;
+    border-color: rgb(232, 119, 6) !important;
+    color: white !important; /* Ajusta el texto a un color que contraste */
+}

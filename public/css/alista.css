@@ -1,0 +1,86 @@
+
+body {
+    font-family: 'Poppins', Arial, Helvetica, sans-serif;
+
+  }
+
+.main-sidebar{
+    height: 100%;
+    width: 250px; 
+    background-color: #009BA9;
+}
+
+
+.image img{
+    padding: 2px; 
+    display: inline-block;
+    width: 100%; 
+    height: 100%; 
+    margin-left: -3px;
+} 
+
+.info a{
+    font-size: 10px;
+}
+
+.nav-item p{
+    color:white;
+    font-family: 'Poppins', Arial, Helvetica, sans-serif;
+}
+
+.nav-item p:hover{
+    color:rgba(228, 225, 225, 0.709);
+    font-family: 'Poppins', Arial, Helvetica, sans-serif;
+}
+
+i.nav-icon{
+    color:hsl(120, 3%, 6%);
+}
+
+.modal-footer{
+    display: flex;
+    justify-content:center;
+   
+}
+
+.modal-footer .btn {
+    width: 30%;
+}
+
+.select2-container .select2-selection--single {
+    height: 40px; /* Ajusta la altura */
+}
+#alistavehi .select2-container--default .select2-selection--single {
+    height: 40px; /* Ajusta la altura */
+}
+#alistainspec .select2-container--default .select2-selection--single {
+    height: 40px; /* Ajusta la altura */
+}
+#alistaobras .select2-container--default .select2-selection--single {
+    height: 40px; /* Ajusta la altura */
+}
+
+/* Cambiar el color del icono para los submenús específicos (por ejemplo, Consultas) */
+.nav-item .nav-treeview .nav-link .nav-icon {
+    color: white; /* Color blanco */
+}
+
+/* Asegurarte de que los iconos de la "Consulta" se mantengan blancos al pasar el ratón (hover) */
+.nav-item .nav-treeview .nav-link:hover .nav-icon {
+    color: white; /* Asegura que el icono se mantenga blanco incluso al pasar el mouse */
+}
+
+#btnnuevoalista {
+    width: 100%; /* Ocupará todo el ancho disponible en su contenedor */
+    max-width: 200px; /* Establece un ancho máximo para evitar que sea demasiado ancho en pantallas grandes */
+    color: #fff;
+    background-color: #009BA9;
+    margin: 0 auto; /* Centra horizontalmente el botón en su contenedor */
+    padding: 10px 10px; /* Añade espaciado interno al botón para una mejor apariencia */
+}
+
+ 
+ .form-group input{
+     width: 100%;
+     max-width: 200px;
+ }

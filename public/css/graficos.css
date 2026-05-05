@@ -1,0 +1,28 @@
+/* Estilo para pantallas pequeñas */
+@media (max-width: 767px) {
+    .knob {
+        width: 100px; /* Ajusta el ancho para pantallas pequeñas */
+        height: 100px; /* Ajusta el alto para pantallas pequeñas */
+        font-size: 12px; /* Ajusta el tamaño de fuente para pantallas pequeñas */
+    }
+}
+
+/* Estilo para pantallas medianas */
+@media (min-width: 768px) and (max-width: 991px) {
+    .knob {
+        width: 160px; /* Ajusta el ancho para pantallas medianas */
+        height: 160px; /* Ajusta el alto para pantallas medianas */
+        font-size: 16px; /* Ajusta el tamaño de fuente para pantallas medianas */
+    }
+}
+
+
+.knob-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.morris-hover{position:absolute;z-index:1000}.morris-hover.morris-default-style{border-radius:10px;padding:6px;color:#666;background:rgba(255,255,255,0.8);border:solid 2px rgba(230,230,230,0.8);font-family:sans-serif;font-size:12px;text-align:center}.morris-hover.morris-default-style .morris-hover-row-label{font-weight:bold;margin:0.25em 0}
+.morris-hover.morris-default-style .morris-hover-point{white-space:nowrap;margin:0.1em 0}
