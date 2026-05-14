@@ -191,7 +191,7 @@ switch ($_GET['op']) {
                     $url .= "&paginacion=numPag={$pagina_actual}|tamPag=100";
                     $url .= "&parametros=fechainicio={$fecha_inicio}|fechafin={$fecha_fin}|proveedor={$proveedor_codigo}";
 
-                    $response = CurlController::requestEstandarV2($url, 'GET');
+                    $response = CurlController::requestEstandar($url, 'GET');
 
                     if (!$response || !isset($response->detalle->Datos)) {
                         break;

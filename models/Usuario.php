@@ -4,55 +4,115 @@ class Usuario extends Conectar
 {
 
     // INICIO DE SESION
-    public function login()
-    {
+public function login() {
+    $conectar = parent::conexion();
 
-        $conectar = parent::conexion();
+    if (isset($_POST["ingreso"])) {
+        $usuario    = $_POST["usuario"];
+        $contrasena = $_POST["password"];
 
-        // Verifica si se envió el formulario de ingreso
-        if (isset($_POST["ingreso"])) {
-            // Obtiene los valores del formulario
-            $usuario = $_POST["usuario"];
-            $password = $_POST["password"];
+        // Validar que los campos no estén vacíos
+        if (empty($usuario) && empty($contrasena)) {
+            header("Location:" . Conectar::ruta() . "index.php?m=2");
+            exit();
+        }
 
+        // Consultar usuario con sus datos de empleado
+        $sql = "SELECT u.*, e.*
+                FROM usuarios u
+                INNER JOIN empleados e ON e.empl_id = u.user_empleado
+                WHERE u.user_usuario = ?
+                AND u.user_password  = MD5(?)";
 
-            if (empty($usuario) && empty($password)) {
-                // Redirige a la página de inicio con mensaje de error (m=2)
-                header("Location:" . conectar::ruta() . "index.php?m=2");
-                exit();
-            } else {
-                // Consulta SQL para verificar las credenciales en la base de datos
-                $sql = "SELECT * FROM usuarios INNER JOIN empleados ON empleados.empl_id = usuarios.user_empleado WHERE user_usuario = ? AND user_password = MD5(?) ";
-                $stmt = $conectar->prepare($sql);
-                $stmt->bindValue(1, $usuario);
-                $stmt->bindValue(2, $password);    // Primera ocurrencia de user_contrasena
+        $stmt = $conectar->prepare($sql);
+        $stmt->bindValue(1, $usuario);
+        $stmt->bindValue(2, $contrasena);
+        $stmt->execute();
+        $resultado = $stmt->fetch();
 
-                $stmt->execute();
+        if (is_array($resultado) && count($resultado) > 0) {
 
-                // Obtiene el resultado de la consulta
-                $resultado = $stmt->fetch();
+            // Guardar datos básicos del usuario en sesión
+            $_SESSION["user_id"]        = $resultado["user_id"];
+            $_SESSION["empl_id"]        = $resultado["empl_id"];
+            $_SESSION["empl_documento"] = $resultado["empl_documento"];
+            $_SESSION["empl_nom"]       = $resultado["empl_nom"];
+            $_SESSION["empl_apellido"]  = $resultado["empl_apellido"];
 
-                // Si se encontraron registros con las credenciales proporcionadas
-                if (is_array($resultado) && count($resultado) > 0) {
-                    // Almacena información del usuario en variables de sesión
-                    $_SESSION["user_id"] = $resultado["user_id"];
-                    $_SESSION["empl_id"] = $resultado["empl_id"];
-                    $_SESSION["empl_documento"] = $resultado["empl_documento"];
-                    $_SESSION["empl_nom"] = $resultado["empl_nom"];
-                    $_SESSION["empl_apellido"] = $resultado["empl_apellido"];
+            // Consultar todos los roles asignados al usuario
+            $sqlRoles = "SELECT ur.ur_rol, r.rol_nom
+                         FROM usuario_roles ur
+                         INNER JOIN roles r ON r.rol_id = ur.ur_rol
+                         WHERE ur.ur_user = ?";
 
-                    // Redirige al inicio después del inicio de sesión exitoso
-                    header("Location:" . Conectar::ruta() . "view/inicio/inicio.php");
-                    exit();
-                } else {
-                    // Redirige a la página de inicio con mensaje de error (m=1)
-                    header("Location:" . Conectar::ruta() . "index.php?m=1");
-                    exit();
-                }
+            $stmtRoles = $conectar->prepare($sqlRoles);
+            $stmtRoles->bindValue(1, $resultado["user_id"], PDO::PARAM_INT);
+            $stmtRoles->execute();
+            $roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
+
+            // Construir arrays de IDs y nombres de roles
+            $idsRoles     = [];
+            $nombresRoles = [];
+
+            foreach ($roles as $rol) {
+                $idsRoles[]     = $rol['ur_rol'];
+                $nombresRoles[] = $rol['rol_nom'];
             }
-            //siguiente rol                     
+
+            // Guardar roles en sesión
+            $_SESSION["user_roles"]     = $idsRoles;     // [1, 2]
+            $_SESSION["user_roles_nom"] = $nombresRoles; // ['Administrador', 'Gerente']
+
+            // Verificar que el usuario tenga al menos un rol asignado
+            if (empty($_SESSION["user_roles"])) {
+                header("Location:" . Conectar::ruta() . "index.php?m=3");
+                exit();
+            }
+
+            // Construir placeholders dinámicos según cantidad de roles
+            $cantidadRoles = count($_SESSION["user_roles"]);
+            $placeholders  = implode(',', array_fill(0, $cantidadRoles, '?'));
+
+            // Consultar permisos activos — unión de todos los roles del usuario
+            $sqlPermisos = "SELECT DISTINCT m.menu_identi
+                            FROM permiso p
+                            INNER JOIN menu m ON m.menu_id = p.permiso_menu
+                            WHERE p.permiso_rol  IN ($placeholders)
+                            AND p.permiso         = 'si'
+                            AND p.permiso_estado  = 1
+                            AND m.menu_estado     = 1";
+
+            $stmtPermisos = $conectar->prepare($sqlPermisos);
+
+            // Bind de cada rol como parámetro
+            foreach ($_SESSION["user_roles"] as $indice => $rolId) {
+                $stmtPermisos->bindValue($indice + 1, $rolId, PDO::PARAM_INT);
+            }
+
+            $stmtPermisos->execute();
+            $permisos = $stmtPermisos->fetchAll(PDO::FETCH_ASSOC);
+
+            // Construir array de permisos
+            $listaPermisos = [];
+
+            foreach ($permisos as $permiso) {
+                $listaPermisos[] = $permiso['menu_identi'];
+            }
+
+            // Guardar permisos en sesión
+            $_SESSION["user_permisos"] = $listaPermisos;
+
+            // Redirigir al inicio
+            header("Location:" . Conectar::ruta() . "view/inicio/inicio.php");
+            exit();
+
+        } else {
+            // Credenciales incorrectas
+            header("Location:" . Conectar::ruta() . "index.php?m=1");
+            exit();
         }
     }
+}
 
     /* CLASE USUARIOS */
 
