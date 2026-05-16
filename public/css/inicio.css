@@ -63,3 +63,121 @@ i.nav-icon{
     border-color: rgb(232, 119, 6) !important;
     color: white !important; /* Ajusta el texto a un color que contraste */
 }
+
+
+/* ESTILOS MENU SIDEBER */
+
+/* ── MainMenu/menu.css ── */
+
+/* variables de color empresa */
+:root {
+    --color-primario:       rgb(0, 155, 169);
+    --color-primario-dark:  rgb(0, 130, 143);
+    --color-primario-light: rgb(0, 175, 190);
+    --color-texto:          #ffffff;
+    --color-texto-muted:    rgba(255, 255, 255, 0.65);
+    --color-hover:          rgba(255, 255, 255, 0.15);
+    --color-activo:         rgba(255, 255, 255, 0.25);
+}
+
+/* sidebar fondo */
+.main-sidebar {
+    background-color: var(--color-primario);
+}
+
+/* logo */
+.user-panel {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* separador de grupo */
+.nav-header {
+    color: var(--color-texto-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 10px 16px 4px;
+}
+
+/* item padre */
+.nav-sidebar .nav-link {
+    color: var(--color-texto);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 16px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+/* hover item padre */
+.nav-sidebar .nav-link:hover {
+    background-color: var(--color-hover);
+    color: var(--color-texto);
+}
+
+/* item activo */
+.nav-sidebar .nav-link.active {
+    background-color: var(--color-activo);
+    color: var(--color-texto);
+    font-weight: 700;
+}
+
+/* icono item padre */
+.nav-sidebar .nav-icon {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 16px;
+    margin-right: 8px;
+    width: 20px;
+    text-align: center;
+}
+
+/* flecha del submenu */
+.nav-sidebar .nav-link .right {
+    color: var(--color-texto-muted);
+}
+
+/* item hijo */
+.nav-treeview .nav-link {
+    color: var(--color-texto-muted);
+    font-size: 13px;
+    font-weight: 400;
+    padding: 8px 16px 8px 36px;
+    background-color: var(--color-primario-dark);
+}
+
+/* hover item hijo */
+.nav-treeview .nav-link:hover {
+    background-color: var(--color-hover);
+    color: var(--color-texto);
+}
+
+/* icono item hijo */
+.nav-treeview .nav-icon {
+    color: var(--color-texto-muted);
+    font-size: 12px;
+}
+
+/* item padre con separador inferior */
+.nav-sidebar > .nav-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* quitar separador al último item */
+.nav-sidebar > .nav-item:last-child {
+    border-bottom: none;
+}
+
+/* scrollbar sidebar */
+.sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
