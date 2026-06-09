@@ -6,6 +6,90 @@ require_once("curl.php");
 
 $proveedores = new Proveedores();
 
+function normalizar_anios_comparativo($anios)
+{
+    if (is_string($anios)) {
+        $aniosDecodificados = json_decode($anios, true);
+        $anios = is_array($aniosDecodificados) ? $aniosDecodificados : explode(',', $anios);
+    }
+
+    if (!is_array($anios)) {
+        throw new Exception('Seleccione al menos un anio para consultar.');
+    }
+
+    $aniosNormalizados = array_values(array_unique(array_filter(array_map(function ($anio) {
+        $anio = (int) $anio;
+        return ($anio >= 2000 && $anio <= 2100) ? $anio : null;
+    }, $anios))));
+
+    sort($aniosNormalizados);
+
+    if (count($aniosNormalizados) === 0) {
+        throw new Exception('Seleccione al menos un anio para consultar.');
+    }
+
+    if (count($aniosNormalizados) > 3) {
+        throw new Exception('Solo puede comparar hasta tres anios.');
+    }
+
+    return $aniosNormalizados;
+}
+
+function color_dataset_comparativo($indice)
+{
+    $colores = [
+        ['bg' => 'rgba(23, 162, 184, 0.78)', 'border' => 'rgba(23, 162, 184, 1)'],
+        ['bg' => 'rgba(40, 167, 69, 0.78)', 'border' => 'rgba(40, 167, 69, 1)'],
+        ['bg' => 'rgba(255, 193, 7, 0.82)', 'border' => 'rgba(255, 193, 7, 1)'],
+    ];
+
+    return $colores[$indice % count($colores)];
+}
+
+function consultar_total_compras_proveedor_anio($proveedorCodigo, $fechaInicio, $fechaFin)
+{
+    $total = 0;
+    $paginaActual = 1;
+
+    while (true) {
+        $url  = "idCompania=6026";
+        $url .= "&descripcion=asfaltart_t350_docto_contable_entradas";
+        $url .= "&paginacion=numPag={$paginaActual}|tamPag=100";
+        $url .= "&parametros=fechainicio={$fechaInicio}|fechafin={$fechaFin}|proveedor={$proveedorCodigo}";
+
+        $response = CurlController::requestEstandar($url, 'GET');
+
+        if (!$response || !isset($response->detalle->Datos) || !is_array($response->detalle->Datos)) {
+            break;
+        }
+
+        $datos = $response->detalle->Datos;
+
+        foreach ($datos as $compra) {
+            $estadoDoc = $compra->f054_id ?? null;
+            $valorNeto = (float)($compra->f470_vlr_neto ?? 0);
+
+            if (in_array($estadoDoc, [0, 2])) {
+                continue;
+            }
+
+            if ($valorNeto <= 0) {
+                continue;
+            }
+
+            $total += $valorNeto;
+        }
+
+        if (count($datos) < 100) {
+            break;
+        }
+
+        $paginaActual++;
+    }
+
+    return $total;
+}
+
 switch ($_GET['op']) {
 
     /* SELECT PROVEEDORES REPORTE OBRAS */
@@ -275,6 +359,118 @@ switch ($_GET['op']) {
                 'success' => false,
                 'message' => $e->getMessage(),
                 'data'    => null
+            ]);
+        }
+        break;
+
+    case 'comprasComparativoAnios':
+        header('Content-Type: application/json');
+        ob_start();
+
+        try {
+            set_time_limit(0);
+
+            $linea_id = $_POST['linea_id'] ?? null;
+            $anios = normalizar_anios_comparativo($_POST['anios'] ?? []);
+
+            if (!$linea_id) {
+                throw new Exception('Seleccione una linea para consultar.');
+            }
+
+            $proveedoresLinea = $proveedores->get_by_linea_con_siesa($linea_id);
+
+            if (empty($proveedoresLinea)) {
+                throw new Exception('No hay proveedores registrados para la linea seleccionada.');
+            }
+
+            $proveedoresValidos = [];
+
+            foreach ($proveedoresLinea as $prov) {
+                $codigo = (int)($prov['prov_cod_siesa'] ?? 0);
+
+                if ($codigo <= 0) {
+                    continue;
+                }
+
+                $proveedoresValidos[$codigo] = [
+                    'codigo' => $codigo,
+                    'nit' => $prov['prov_nit'] ?? '',
+                    'nombre' => $prov['prov_descripcion'] ?? 'SIN NOMBRE',
+                    'linea' => $prov['linea_nom'] ?? ''
+                ];
+            }
+
+            if (empty($proveedoresValidos)) {
+                throw new Exception('Los proveedores de la linea no tienen codigo SIESA.');
+            }
+
+            $totales = [];
+            $totalesAnio = [];
+
+            foreach ($anios as $anio) {
+                $fechaInicio = "{$anio}-01-01";
+                $fechaFin = "{$anio}-12-31";
+                $totalesAnio[$anio] = 0;
+
+                foreach ($proveedoresValidos as $codigo => $prov) {
+                    $totalProveedor = consultar_total_compras_proveedor_anio($codigo, $fechaInicio, $fechaFin);
+                    $totales[$anio][$codigo] = $totalProveedor;
+                    $totalesAnio[$anio] += $totalProveedor;
+                }
+            }
+
+            $proveedoresOrdenados = array_values($proveedoresValidos);
+
+            usort($proveedoresOrdenados, function ($a, $b) use ($totales, $anios) {
+                $totalA = 0;
+                $totalB = 0;
+
+                foreach ($anios as $anio) {
+                    $totalA += $totales[$anio][$a['codigo']] ?? 0;
+                    $totalB += $totales[$anio][$b['codigo']] ?? 0;
+                }
+
+                return $totalB <=> $totalA;
+            });
+
+            $labels = array_map(function ($prov) {
+                return $prov['nombre'];
+            }, $proveedoresOrdenados);
+
+            $datasets = [];
+
+            foreach ($anios as $indice => $anio) {
+                $color = color_dataset_comparativo($indice);
+                $datasets[] = [
+                    'label' => (string)$anio,
+                    'data' => array_map(function ($prov) use ($totales, $anio) {
+                        return round($totales[$anio][$prov['codigo']] ?? 0, 2);
+                    }, $proveedoresOrdenados),
+                    'backgroundColor' => $color['bg'],
+                    'borderColor' => $color['border'],
+                    'borderWidth' => 1
+                ];
+            }
+
+            ob_end_clean();
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'linea' => $proveedoresOrdenados[0]['linea'] ?? '',
+                    'anios' => $anios,
+                    'labels' => $labels,
+                    'datasets' => $datasets,
+                    'totales_anio' => $totalesAnio,
+                    'proveedores' => $proveedoresOrdenados,
+                    'unidad' => 'COP'
+                ]
+            ]);
+        } catch (Exception $e) {
+            ob_end_clean();
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null
             ]);
         }
         break;
