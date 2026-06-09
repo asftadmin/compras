@@ -1,5 +1,7 @@
 function init() {
-    cargarProveedoresxEvalu();
+    if ($('#ev_enviar_data').length) {
+        cargarProveedoresxEvalu();
+    }
 }
 
 
@@ -19,6 +21,10 @@ var getURLParameter = function (sParam) {
 
 //Adquirir datos para el detalle ticket
 $(document).ready(function () {
+    if (!$('#fecha_inicio').length || !$('#fecha_fin').length) {
+        return;
+    }
+
     var evaluacion_id = getURLParameter('id');
 
     if (!evaluacion_id) {
@@ -52,9 +58,17 @@ $(document).ready(function () {
 
 
 function cargarEvaluacionesAPI() {
+    if (!$('#ev_siesa_data').length) {
+        return;
+    }
 
     const fechainicio = $('#fecha_inicio').val();
     const fechafin = $('#fecha_fin').val();
+
+    if (!fechainicio || !fechafin) {
+        Swal.fire('Atencion', 'Primero consulte las fechas de la evaluacion.', 'warning');
+        return;
+    }
 
     // Mostrar SweetAlert con spinner
     Swal.fire({
@@ -75,10 +89,24 @@ function cargarEvaluacionesAPI() {
     }, 35000); // 10 segundos
 
 
-    $('#ev_siesa_data').DataTable({
+    const tablaSiesa = $('#ev_siesa_data');
+
+    // Evita acumular eventos cuando el usuario consulta varias veces.
+    tablaSiesa
+        .off('xhr.dt.cargarEvaluaciones error.dt.cargarEvaluaciones')
+        .on('xhr.dt.cargarEvaluaciones', function () {
+            clearTimeout(timeout);
+            Swal.close();
+        })
+        .on('error.dt.cargarEvaluaciones', function () {
+            clearTimeout(timeout);
+            Swal.fire('Error', 'Ocurrio un problema al cargar los datos.', 'error');
+        });
+
+    tablaSiesa.DataTable({
         destroy: true,
         ajax: {
-            url: '../../controller/evaluacion.php?op=consultaEvaluacionSiesa',
+            url: '../../controller/Evaluacion.php?op=consultaEvaluacionSiesa',
             type: 'GET',
             data: {
                 fechainicio,
@@ -132,8 +160,8 @@ function cargarEvaluacionesAPI() {
         language: {
             "sProcessing": "Procesando...",
             "sLengthMenu": "Mostrar _MENU_ registros",
-            "sZeroRecords": "No se encontraron resultados",
-            "sEmptyTable": "Ningún dato disponible en esta tabla",
+            "sZeroRecords": "No se encontraron pendientes por importar",
+            "sEmptyTable": "No hay evaluaciones pendientes por importar",
             "sInfo": "Mostrando un total de _TOTAL_ registros",
             "sInfoEmpty": "Mostrando un total de 0 registros",
             "sInfoFiltered": "(filtrado de un total de _MAX_ registros)",
@@ -155,17 +183,6 @@ function cargarEvaluacionesAPI() {
         }
     });
 
-    // Cerrar loader cuando la tabla termina de cargar correctamente
-    $('#ev_siesa_data').on('xhr.dt', function (e, settings, json, xhr) {
-        clearTimeout(timeout);
-        Swal.close();
-    });
-
-    // Cerrar loader si hay error al cargar
-    $('#ev_siesa_data').on('error.dt', function (e, settings, techNote, message) {
-        clearTimeout(timeout);
-        Swal.fire('Error', 'Ocurrió un problema al cargar los datos.', 'error');
-    });
 }
 
 $(document).on('click', '#btn-add-buscar', function () {
@@ -177,11 +194,16 @@ $(document).on('click', '#btn-add-buscar', function () {
 // Checkbox maestro (seleccionar / deseleccionar todos)
 $(document).on('change', '#selectAll', function () {
     const isChecked = $(this).prop('checked');
-    $('.row-check').prop('checked', isChecked);
+    $('#ev_siesa_data tbody .row-check').prop('checked', isChecked);
 });
 
 // Guardar seleccionados
 $(document).on('click', '#btnGuardarEvaSiesa', function () {
+    if (!$.fn.dataTable.isDataTable('#ev_siesa_data')) {
+        Swal.fire('Atencion', 'Primero consulte las evaluaciones pendientes.', 'warning');
+        return;
+    }
+
     const table = $('#ev_siesa_data').DataTable();
     const codi_eval = getURLParameter('id');
     let seleccionados = [];
@@ -268,9 +290,14 @@ $(document).on('click', '#btnGuardarEvaSiesa', function () {
                             showConfirmButton: false
                         });
 
-                        // Recargar el DataTable
+                        $('#selectAll').prop('checked', false);
+                        $('#ev_siesa_data tbody .row-check').prop('checked', false);
+
+                        // Recarga pendientes por importar. Los guardados ya no deben aparecer.
                         setTimeout(() => {
-                            $('#ev_siesa_data').DataTable().ajax.reload(null, false);
+                            table.ajax.reload(function () {
+                                $('#selectAll').prop('checked', false);
+                            }, false);
                         }, 500);
 
                     } else {
@@ -282,6 +309,7 @@ $(document).on('click', '#btnGuardarEvaSiesa', function () {
                     }
                 },
                 error: function () {
+                    Swal.close();
                     Swal.fire('Error', 'No se pudo enviar la solicitud al servidor.', 'error');
                 }
             });
@@ -299,6 +327,9 @@ $('#btnVolver').click(function () {
 });
 
 function cargarProveedoresxEvalu() {
+    if (!$('#ev_enviar_data').length) {
+        return;
+    }
 
     const codi_eval = getURLParameter('id');
 
@@ -308,7 +339,7 @@ function cargarProveedoresxEvalu() {
         return;
     }
     // 🔹 Inicializar DataTable
-    $('#ev_enviar_data').DataTable({
+    const table = $('#ev_enviar_data').DataTable({
         destroy: true,
         dom: "Bfrtip",
         ajax: {
@@ -533,7 +564,7 @@ function cargarProveedoresxEvalu() {
         }
     });
 
-    $(window).on('resize', function () {
+    $(window).off('resize.evEnviar').on('resize.evEnviar', function () {
         table.columns.adjust().responsive.recalc();
     });
 

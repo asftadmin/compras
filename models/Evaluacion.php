@@ -1,8 +1,10 @@
 <?php
 /* CLASE USUARIO */
-class Evaluacion extends Conectar {
+class Evaluacion extends Conectar
+{
 
-    public function insert_evaluacion($nombre_eval, $fecha_inicio, $fecha_fin) {
+    public function insert_evaluacion($nombre_eval, $fecha_inicio, $fecha_fin)
+    {
 
         $conectar = parent::conexion();
         parent::set_names();
@@ -17,7 +19,8 @@ class Evaluacion extends Conectar {
 
 
     /* LISTAR TODOS LOS PROVEEDORES */
-    public function get_evaluacion() {
+    public function get_evaluacion()
+    {
         $conectar = parent::conexion();
         parent::set_names();
         $sql = "SELECT * FROM evaluacion";
@@ -26,7 +29,70 @@ class Evaluacion extends Conectar {
         return $resultado = $sql->fetchAll();
     }
 
-    public function get_detalle_eval($codi_eval) {
+    public function get_evaluaciones_dashboard()
+    {
+        $conectar = parent::conexion();
+        parent::set_names();
+
+        $sql = "SELECT codi_eval, nomb_eval, fecha_inicio_eval, fecha_fin_eval
+                FROM evaluacion
+                ORDER BY fecha_inicio_eval DESC, fecha_fin_eval DESC, codi_eval DESC";
+
+        $stmt = $conectar->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function get_comparativo_evaluaciones($evaluacion_uno, $evaluacion_dos, $proveedores = [])
+    {
+        $conectar = parent::conexion();
+        parent::set_names();
+
+        $whereProveedores = "";
+
+        if (!empty($proveedores)) {
+            $placeholders = [];
+
+            foreach ($proveedores as $index => $proveedor) {
+                $placeholders[] = ":proveedor_" . $index;
+            }
+
+            $whereProveedores = " AND ed.nit_proveedor IN (" . implode(",", $placeholders) . ") ";
+        }
+
+        $sql = "SELECT
+                ed.codi_eval,
+                e.nomb_eval,
+                e.fecha_inicio_eval,
+                e.fecha_fin_eval,
+                ed.nit_proveedor,
+                COALESCE(MAX(NULLIF(ed.razon_social, '')), 'SIN NOMBRE') AS razon_social,
+                ROUND(AVG(NULLIF(regexp_replace(REPLACE(ed.porcentaje_promedio::text, ',', '.'), '[^0-9.-]', '', 'g'), '')::numeric), 2) AS porcentaje_promedio
+            FROM evaluacion_detalle ed
+            INNER JOIN evaluacion e ON e.codi_eval = ed.codi_eval
+            WHERE ed.codi_eval IN (:evaluacion_uno, :evaluacion_dos)
+            $whereProveedores
+            GROUP BY ed.codi_eval, e.nomb_eval, e.fecha_inicio_eval, e.fecha_fin_eval, ed.nit_proveedor
+            ORDER BY razon_social ASC";
+
+        $stmt = $conectar->prepare($sql);
+        $stmt->bindValue(':evaluacion_uno', $evaluacion_uno, PDO::PARAM_INT);
+        $stmt->bindValue(':evaluacion_dos', $evaluacion_dos, PDO::PARAM_INT);
+
+        if (!empty($proveedores)) {
+            foreach ($proveedores as $index => $proveedor) {
+                $stmt->bindValue(":proveedor_" . $index, $proveedor, PDO::PARAM_STR);
+            }
+        }
+
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function get_detalle_eval($codi_eval)
+    {
         $conectar = parent::conexion();
         parent::set_names();
         $sql = "SELECT * FROM evaluacion WHERE codi_eval = ?";
@@ -36,7 +102,8 @@ class Evaluacion extends Conectar {
         return $resultado = $sql->fetchAll();
     }
 
-    public function insert_detalle_evaluacion($data) {
+    public function insert_detalle_evaluacion($data)
+    {
         $conectar = parent::conexion();
         parent::set_names();
 
@@ -83,7 +150,8 @@ class Evaluacion extends Conectar {
         return $sql->execute();
     }
 
-    public function existe_detalle_evaluacion($nit, $tipo, $fecha_inicio, $fecha_fin) {
+    public function existe_detalle_evaluacion($nit, $tipo, $fecha_inicio, $fecha_fin)
+    {
         $conectar = parent::conexion();
         parent::set_names();
 
@@ -106,7 +174,26 @@ class Evaluacion extends Conectar {
         return $stmt->fetchColumn() > 0;
     }
 
-    public function get_envios($codi_eval) {
+    public function get_detalles_importados_por_rango($fecha_inicio, $fecha_fin)
+    {
+        $conectar = parent::conexion();
+        parent::set_names();
+
+        $sql = "SELECT DISTINCT nit_proveedor, tipo_evaluacion
+            FROM evaluacion_detalle
+            WHERE fecha_inicio_deta = :fecha_inicio
+              AND fecha_fin_deta = :fecha_fin";
+
+        $stmt = $conectar->prepare($sql);
+        $stmt->bindValue(':fecha_inicio', $fecha_inicio, PDO::PARAM_STR);
+        $stmt->bindValue(':fecha_fin', $fecha_fin, PDO::PARAM_STR);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function get_envios($codi_eval)
+    {
         $conectar = parent::conexion();
         parent::set_names();
         $sql = "SELECT DISTINCT 
@@ -130,7 +217,8 @@ class Evaluacion extends Conectar {
         return $resultado = $sql->fetchAll();
     }
 
-    public function get_evaluacion_id($codigo, $nit) {
+    public function get_evaluacion_id($codigo, $nit)
+    {
 
         $conectar = parent::conexion();
         parent::set_names();
@@ -159,7 +247,8 @@ class Evaluacion extends Conectar {
         return $resultado = $sql->fetchAll();
     }
 
-    public function actualizarEstadoDetalle($codi_eval, $nit_proveedor, $estado) {
+    public function actualizarEstadoDetalle($codi_eval, $nit_proveedor, $estado)
+    {
         $conectar = parent::conexion();
         parent::set_names();
         $sql = "UPDATE evaluacion_detalle 

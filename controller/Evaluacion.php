@@ -101,6 +101,211 @@ switch ($_GET['op']) {
 
         break;
 
+    case "listarEvaluacionesDashboard":
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $data = $evaluaciones->get_evaluaciones_dashboard();
+            $formattedData = [];
+
+            foreach ($data as $row) {
+                $formattedData[] = [
+                    'codi_eval' => (int)$row['codi_eval'],
+                    'nomb_eval' => $row['nomb_eval'],
+                    'fecha_inicio_eval' => $row['fecha_inicio_eval'],
+                    'fecha_fin_eval' => $row['fecha_fin_eval'],
+                    'label' => $row['nomb_eval'] . ' (' . $row['fecha_inicio_eval'] . ' - ' . $row['fecha_fin_eval'] . ')'
+                ];
+            }
+
+            echo json_encode([
+                'success' => true,
+                'aaData' => $formattedData
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'aaData' => []
+            ]);
+        }
+
+        break;
+
+    case "compararEvaluacionesDashboard":
+        header('Content-Type: application/json; charset=utf-8');
+        ob_start();
+
+        try {
+            $evaluacion_uno = isset($_POST['evaluacion_uno']) ? (int)$_POST['evaluacion_uno'] : 0;
+            $evaluacion_dos = isset($_POST['evaluacion_dos']) ? (int)$_POST['evaluacion_dos'] : 0;
+
+            $proveedoresFiltro = $_POST['proveedores'] ?? [];
+
+            if (!is_array($proveedoresFiltro)) {
+                $proveedoresFiltro = [];
+            }
+
+            $proveedoresFiltro = array_filter($proveedoresFiltro, function ($nit) {
+                return trim((string)$nit) !== '';
+            });
+
+            if ($evaluacion_uno <= 0 || $evaluacion_dos <= 0) {
+                throw new Exception('Seleccione dos evaluaciones para comparar.');
+            }
+
+            if ($evaluacion_uno === $evaluacion_dos) {
+                throw new Exception('Seleccione evaluaciones diferentes.');
+            }
+
+            $evaluacionesDisponibles = $evaluaciones->get_evaluaciones_dashboard();
+            $metadata = [];
+
+            foreach ($evaluacionesDisponibles as $row) {
+                $id = (int)$row['codi_eval'];
+                if ($id === $evaluacion_uno || $id === $evaluacion_dos) {
+                    $metadata[$id] = [
+                        'codi_eval' => $id,
+                        'nomb_eval' => $row['nomb_eval'],
+                        'fecha_inicio_eval' => $row['fecha_inicio_eval'],
+                        'fecha_fin_eval' => $row['fecha_fin_eval'],
+                        'anio' => substr((string)$row['fecha_inicio_eval'], 0, 4),
+                        'label' => $row['nomb_eval'] . ' (' . $row['fecha_inicio_eval'] . ' - ' . $row['fecha_fin_eval'] . ')'
+                    ];
+                }
+            }
+
+            if (!isset($metadata[$evaluacion_uno]) || !isset($metadata[$evaluacion_dos])) {
+                throw new Exception('Una de las evaluaciones seleccionadas no existe.');
+            }
+
+            $data = $evaluaciones->get_comparativo_evaluaciones($evaluacion_uno, $evaluacion_dos, $proveedoresFiltro);
+
+            if (empty($data)) {
+                throw new Exception('No hay detalles guardados para las evaluaciones seleccionadas.');
+            }
+
+            $proveedores = [];
+
+            foreach ($data as $row) {
+                $nit = trim((string)$row['nit_proveedor']);
+                $idEval = (int)$row['codi_eval'];
+
+                if ($nit === '') {
+                    continue;
+                }
+
+                if (!isset($proveedores[$nit])) {
+                    $proveedores[$nit] = [
+                        'nit_proveedor' => $nit,
+                        'razon_social' => $row['razon_social'],
+                        'valores' => []
+                    ];
+                }
+
+                $proveedores[$nit]['valores'][$idEval] = $row['porcentaje_promedio'] !== null
+                    ? round((float)$row['porcentaje_promedio'], 2)
+                    : null;
+            }
+
+            if (empty($proveedores)) {
+                throw new Exception('No hay proveedores con calificacion para comparar.');
+            }
+
+            uasort($proveedores, function ($a, $b) {
+                return strcasecmp($a['razon_social'], $b['razon_social']);
+            });
+
+            $labels = [];
+            $tabla = [];
+            $datosUno = [];
+            $datosDos = [];
+            $sumaUno = 0;
+            $sumaDos = 0;
+            $conteoUno = 0;
+            $conteoDos = 0;
+
+            foreach ($proveedores as $proveedor) {
+                $valorUno = $proveedor['valores'][$evaluacion_uno] ?? null;
+                $valorDos = $proveedor['valores'][$evaluacion_dos] ?? null;
+                $diferencia = ($valorUno !== null && $valorDos !== null)
+                    ? round($valorDos - $valorUno, 2)
+                    : null;
+
+                $labels[] = $proveedor['razon_social'];
+                $datosUno[] = $valorUno;
+                $datosDos[] = $valorDos;
+
+                if ($valorUno !== null) {
+                    $sumaUno += $valorUno;
+                    $conteoUno++;
+                }
+
+                if ($valorDos !== null) {
+                    $sumaDos += $valorDos;
+                    $conteoDos++;
+                }
+
+                $tabla[] = [
+                    'nit_proveedor' => $proveedor['nit_proveedor'],
+                    'razon_social' => $proveedor['razon_social'],
+                    'valor_uno' => $valorUno,
+                    'valor_dos' => $valorDos,
+                    'diferencia' => $diferencia
+                ];
+            }
+
+            $promedioUno = $conteoUno > 0 ? round($sumaUno / $conteoUno, 2) : null;
+            $promedioDos = $conteoDos > 0 ? round($sumaDos / $conteoDos, 2) : null;
+
+            ob_end_clean();
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'evaluaciones' => [
+                        $metadata[$evaluacion_uno],
+                        $metadata[$evaluacion_dos]
+                    ],
+                    'labels' => $labels,
+                    'datasets' => [
+                        [
+                            'label' => $metadata[$evaluacion_uno]['nomb_eval'],
+                            'data' => $datosUno,
+                            'backgroundColor' => 'rgba(23, 162, 184, 0.72)',
+                            'borderColor' => '#138496',
+                            'borderWidth' => 1
+                        ],
+                        [
+                            'label' => $metadata[$evaluacion_dos]['nomb_eval'],
+                            'data' => $datosDos,
+                            'backgroundColor' => 'rgba(40, 167, 69, 0.72)',
+                            'borderColor' => '#1e7e34',
+                            'borderWidth' => 1
+                        ]
+                    ],
+                    'tabla' => $tabla,
+                    'resumen' => [
+                        'promedio_uno' => $promedioUno,
+                        'promedio_dos' => $promedioDos,
+                        'diferencia' => ($promedioUno !== null && $promedioDos !== null)
+                            ? round($promedioDos - $promedioUno, 2)
+                            : null,
+                        'proveedores' => count($tabla)
+                    ],
+                    'unidad' => 'porcentaje'
+                ]
+            ]);
+        } catch (Exception $e) {
+            ob_end_clean();
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null
+            ]);
+        }
+
+        break;
+
     case "detalleEvaluacion":
 
 
@@ -190,14 +395,21 @@ switch ($_GET['op']) {
 
 
 
+        $detalles_importados = $evaluaciones->get_detalles_importados_por_rango($fechainicio, $fechafin);
+        $importados = [];
+        $crearClaveDetalle = function ($nit, $tipo) {
+            return trim((string) $nit) . '|' . strtoupper(trim((string) $tipo));
+        };
+
+        foreach ($detalles_importados as $detalle) {
+            $clave = $crearClaveDetalle($detalle['nit_proveedor'], $detalle['tipo_evaluacion']);
+            $importados[$clave] = true;
+        }
+
         $filtrados = [];
         foreach ($data as $item) {
-            if (!$evaluaciones->existe_detalle_evaluacion(
-                $item['nit_proveedor'],
-                $item['tipo'],
-                $fechainicio,
-                $fechafin
-            )) {
+            $clave = $crearClaveDetalle($item['nit_proveedor'], $item['tipo']);
+            if (!isset($importados[$clave])) {
                 $filtrados[] = array_values($item);
             }
         }
@@ -242,6 +454,14 @@ switch ($_GET['op']) {
 
             $resultado = $evaluaciones->insert_detalle_evaluacion($row);
             if ($resultado) $guardados++;
+        }
+
+        if ($guardados === 0) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "No se guardo ningun registro. Verifique si ya estaban importados o si hubo un error."
+            ]);
+            break;
         }
 
         echo json_encode([
