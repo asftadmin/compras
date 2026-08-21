@@ -530,7 +530,7 @@ switch ($_GET['op']) {
 
         // --- Configuración SMTP Office 365 ---
         $smtp_user = 'jefedecompras@asfaltart.com';
-        $smtp_pass = 'Jcomp+2021';
+        $smtp_pass = '3yvTdf%DX#GF';
         $smtp_host = 'smtp.office365.com';
         $smtp_port = 587;
 
