@@ -51,7 +51,7 @@ class Conectar
 
     public static function ruta()
     {
-        return 'http://localhost/compras/';
-        // return "http://181.204.219.154:3396/compras/";
+        // return 'http://localhost/compras/';
+        return 'http://181.204.219.154:3396/compras/';
     }
 }
