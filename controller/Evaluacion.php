@@ -1,52 +1,49 @@
 <?php
-/*CONTROLADOR USUARIO */
-require_once('../config/conexion.php');
-require_once('../models/Evaluacion.php');
-require_once("curl.php");
+/* CONTROLADOR USUARIO */
+require_once ('../config/conexion.php');
+require_once ('../models/Evaluacion.php');
+require_once ('curl.php');
 require '../vendor/autoload.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
 
 $evaluaciones = new Evaluacion();
 
 switch ($_GET['op']) {
-
-
-    case "guardaryeditar":
-
+    case 'guardaryeditar':
         // --- Validar que existan los campos esperados ---
-        if (!isset($_POST["rangoFechasEva"]) || !isset($_POST["eval_nombre"])) {
+        if (!isset($_POST['rangoFechasEva']) || !isset($_POST['eval_nombre'])) {
             echo json_encode([
-                "status" => "error",
-                "message" => "Faltan datos requeridos en la solicitud."
+                'status' => 'error',
+                'message' => 'Faltan datos requeridos en la solicitud.'
             ]);
             exit;
         }
 
         // --- Sanitizar y asignar variables ---
-        $rangoFechasEva = trim($_POST["rangoFechasEva"]);
-        $eval_nombre = trim($_POST["eval_nombre"]);
+        $rangoFechasEva = trim($_POST['rangoFechasEva']);
+        $eval_nombre = trim($_POST['eval_nombre']);
 
         // --- Validaciones adicionales ---
-        if ($rangoFechasEva === "" || $eval_nombre === "") {
+        if ($rangoFechasEva === '' || $eval_nombre === '') {
             echo json_encode([
-                "status" => "error",
-                "message" => "Los campos no pueden estar vacíos."
+                'status' => 'error',
+                'message' => 'Los campos no pueden estar vacíos.'
             ]);
             exit;
         }
 
-        $fechas = explode(" - ", $rangoFechasEva);
+        $fechas = explode(' - ', $rangoFechasEva);
 
         $fecha_inicio = trim($fechas[0]);
         $fecha_fin = trim($fechas[1]);
 
         // Validar formato de fechas (opcional)
-        if (!preg_match("/^\d{4}-\d{2}-\d{2}$/", $fecha_inicio) || !preg_match("/^\d{4}-\d{2}-\d{2}$/", $fecha_fin)) {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)) {
             echo json_encode([
-                "status" => "error",
-                "message" => "Las fechas deben tener el formato YYYY-MM-DD."
+                'status' => 'error',
+                'message' => 'Las fechas deben tener el formato YYYY-MM-DD.'
             ]);
             exit;
         }
@@ -57,19 +54,19 @@ switch ($_GET['op']) {
         // --- Evaluar resultado ---
         if ($resultado) {
             echo json_encode([
-                "status" => "success",
-                "message" => "Evaluación registrada correctamente."
+                'status' => 'success',
+                'message' => 'Evaluación registrada correctamente.'
             ]);
         } else {
             echo json_encode([
-                "status" => "error",
-                "message" => "No se pudo registrar la evaluación. Verifica los datos."
+                'status' => 'error',
+                'message' => 'No se pudo registrar la evaluación. Verifica los datos.'
             ]);
         }
 
         break;
 
-    case "listarEvaluaciones":
+    case 'listarEvaluaciones':
         $data = array();
         $data = $evaluaciones->get_evaluacion();
         $formattedData = array();
@@ -78,7 +75,7 @@ switch ($_GET['op']) {
             $sub_array = array();
             $sub_array[] = $row['codi_eval'];
             $sub_array[] = $row['nomb_eval'];
-            $rango_fechas = $row['fecha_inicio_eval'] . " al " . $row['fecha_fin_eval'];
+            $rango_fechas = $row['fecha_inicio_eval'] . ' al ' . $row['fecha_fin_eval'];
             $sub_array[] = $rango_fechas;
             $sub_array[] = '<div class="button-container text-center" >
                                 <button type="button" onClick="ver(' . $row['codi_eval'] . ');" id="' . $row['codi_eval'] . '" class="btn btn-success btn-icon">
@@ -101,7 +98,7 @@ switch ($_GET['op']) {
 
         break;
 
-    case "listarEvaluacionesDashboard":
+    case 'listarEvaluacionesDashboard':
         header('Content-Type: application/json; charset=utf-8');
 
         try {
@@ -110,7 +107,7 @@ switch ($_GET['op']) {
 
             foreach ($data as $row) {
                 $formattedData[] = [
-                    'codi_eval' => (int)$row['codi_eval'],
+                    'codi_eval' => (int) $row['codi_eval'],
                     'nomb_eval' => $row['nomb_eval'],
                     'fecha_inicio_eval' => $row['fecha_inicio_eval'],
                     'fecha_fin_eval' => $row['fecha_fin_eval'],
@@ -132,13 +129,13 @@ switch ($_GET['op']) {
 
         break;
 
-    case "compararEvaluacionesDashboard":
+    case 'compararEvaluacionesDashboard':
         header('Content-Type: application/json; charset=utf-8');
         ob_start();
 
         try {
-            $evaluacion_uno = isset($_POST['evaluacion_uno']) ? (int)$_POST['evaluacion_uno'] : 0;
-            $evaluacion_dos = isset($_POST['evaluacion_dos']) ? (int)$_POST['evaluacion_dos'] : 0;
+            $evaluacion_uno = isset($_POST['evaluacion_uno']) ? (int) $_POST['evaluacion_uno'] : 0;
+            $evaluacion_dos = isset($_POST['evaluacion_dos']) ? (int) $_POST['evaluacion_dos'] : 0;
 
             $proveedoresFiltro = $_POST['proveedores'] ?? [];
 
@@ -147,7 +144,7 @@ switch ($_GET['op']) {
             }
 
             $proveedoresFiltro = array_filter($proveedoresFiltro, function ($nit) {
-                return trim((string)$nit) !== '';
+                return trim((string) $nit) !== '';
             });
 
             if ($evaluacion_uno <= 0 || $evaluacion_dos <= 0) {
@@ -162,14 +159,14 @@ switch ($_GET['op']) {
             $metadata = [];
 
             foreach ($evaluacionesDisponibles as $row) {
-                $id = (int)$row['codi_eval'];
+                $id = (int) $row['codi_eval'];
                 if ($id === $evaluacion_uno || $id === $evaluacion_dos) {
                     $metadata[$id] = [
                         'codi_eval' => $id,
                         'nomb_eval' => $row['nomb_eval'],
                         'fecha_inicio_eval' => $row['fecha_inicio_eval'],
                         'fecha_fin_eval' => $row['fecha_fin_eval'],
-                        'anio' => substr((string)$row['fecha_inicio_eval'], 0, 4),
+                        'anio' => substr((string) $row['fecha_inicio_eval'], 0, 4),
                         'label' => $row['nomb_eval'] . ' (' . $row['fecha_inicio_eval'] . ' - ' . $row['fecha_fin_eval'] . ')'
                     ];
                 }
@@ -188,8 +185,8 @@ switch ($_GET['op']) {
             $proveedores = [];
 
             foreach ($data as $row) {
-                $nit = trim((string)$row['nit_proveedor']);
-                $idEval = (int)$row['codi_eval'];
+                $nit = trim((string) $row['nit_proveedor']);
+                $idEval = (int) $row['codi_eval'];
 
                 if ($nit === '') {
                     continue;
@@ -204,7 +201,7 @@ switch ($_GET['op']) {
                 }
 
                 $proveedores[$nit]['valores'][$idEval] = $row['porcentaje_promedio'] !== null
-                    ? round((float)$row['porcentaje_promedio'], 2)
+                    ? round((float) $row['porcentaje_promedio'], 2)
                     : null;
             }
 
@@ -306,9 +303,7 @@ switch ($_GET['op']) {
 
         break;
 
-    case "detalleEvaluacion":
-
-
+    case 'detalleEvaluacion':
         if (!isset($_POST['id'])) {
             echo json_encode(['status' => 'error', 'message' => 'ID no proporcionado']);
             exit;
@@ -343,9 +338,7 @@ switch ($_GET['op']) {
         exit;
         break;
 
-
-    case "consultaEvaluacionSiesa":
-
+    case 'consultaEvaluacionSiesa':
         $data = [];
         $fechainicio = $_GET['fechainicio'] ?? date('Y-m-d');
         $fechafin = $_GET['fechafin'] ?? date('Y-m-d');
@@ -358,9 +351,9 @@ switch ($_GET['op']) {
         foreach ($consultas as $consulta) {
             $url = 'idCompania=6026';
             $url .= '&descripcion=' . $consulta;
-            //$url .= '&paginacion=' . urlencode("numPag=1|tamPag=100");
+            // $url .= '&paginacion=' . urlencode("numPag=1|tamPag=100");
             $url .= '&parametros=' . urlencode("fechainicio=$fechainicio|fechafin=$fechafin");
-            $method = "GET";
+            $method = 'GET';
             $response = CurlController::requestEstandar($url, $method);
 
             if (
@@ -393,8 +386,6 @@ switch ($_GET['op']) {
             }
         }
 
-
-
         $detalles_importados = $evaluaciones->get_detalles_importados_por_rango($fechainicio, $fechafin);
         $importados = [];
         $crearClaveDetalle = function ($nit, $tipo) {
@@ -415,19 +406,18 @@ switch ($_GET['op']) {
         }
 
         echo json_encode([
-            "sEcho" => 1,
-            "iTotalRecords" => count($filtrados),
-            "iTotalDisplayRecords" => count($filtrados),
-            "aaData" => $filtrados
+            'sEcho' => 1,
+            'iTotalRecords' => count($filtrados),
+            'iTotalDisplayRecords' => count($filtrados),
+            'aaData' => $filtrados
         ]);
         break;
 
-    case "guardarDetalleEvaluacion":
-
+    case 'guardarDetalleEvaluacion':
         if (!isset($_POST['registros'])) {
             echo json_encode([
-                "status" => "error",
-                "message" => "No se recibieron datos."
+                'status' => 'error',
+                'message' => 'No se recibieron datos.'
             ]);
             exit;
         }
@@ -437,8 +427,8 @@ switch ($_GET['op']) {
 
         if (!is_array($registros)) {
             echo json_encode([
-                "status" => "error",
-                "message" => "Formato de datos inválido (no es JSON)."
+                'status' => 'error',
+                'message' => 'Formato de datos inválido (no es JSON).'
             ]);
             exit;
         }
@@ -446,32 +436,31 @@ switch ($_GET['op']) {
         $guardados = 0;
 
         foreach ($registros as $row) {
-
             // 🔒 Asegurar que cada elemento sea array (algunos pueden llegar como string)
             if (!is_array($row)) {
                 $row = json_decode($row, true);
             }
 
             $resultado = $evaluaciones->insert_detalle_evaluacion($row);
-            if ($resultado) $guardados++;
+            if ($resultado)
+                $guardados++;
         }
 
         if ($guardados === 0) {
             echo json_encode([
-                "status" => "error",
-                "message" => "No se guardo ningun registro. Verifique si ya estaban importados o si hubo un error."
+                'status' => 'error',
+                'message' => 'No se guardo ningun registro. Verifique si ya estaban importados o si hubo un error.'
             ]);
             break;
         }
 
         echo json_encode([
-            "status" => "success",
-            "message" => "Se guardaron {$guardados} registros correctamente."
+            'status' => 'success',
+            'message' => "Se guardaron {$guardados} registros correctamente."
         ]);
         break;
 
-    case "listarEnvios":
-
+    case 'listarEnvios':
         $codi_eval = $_GET['codi_eval'] ?? NULL;
 
         $data = array();
@@ -501,7 +490,7 @@ switch ($_GET['op']) {
 
             $sub_array[] = '<div class="text-center">' . $badge . '</div>';
             $sub_array[] = '<div class="button-container text-center" >
-                                <button type="button" onClick="verEval(' . $row['codi_eval'] . ', \'' . $row['nit_proveedor'] . '\')" class="btn btn-danger btn-icon">
+                                <button type="button" onClick="verEval(' . $row['codi_eval'] . ", '" . $row['nit_proveedor'] . '\')" class="btn btn-danger btn-icon">
                                     <div><i class="fas fa-file-pdf"></i></div>
                                 </button>
                             </div>';
@@ -519,7 +508,6 @@ switch ($_GET['op']) {
         break;
 
     case 'enviarCorreos':
-
         $codi_eval = $_POST['codi_eval'];
         $proveedores = json_decode($_POST['proveedores'], true);
 
@@ -529,10 +517,22 @@ switch ($_GET['op']) {
         }
 
         // --- Configuración SMTP Office 365 ---
-        $smtp_user = 'jefedecompras@asfaltart.com';
-        $smtp_pass = '3yvTdf%DX#GF';
+        $smtp_user = getenv('COMPRAS_SMTP_USERNAME');
+        $smtp_pass = getenv('COMPRAS_SMTP_PASSWORD');
         $smtp_host = 'smtp.office365.com';
         $smtp_port = 587;
+
+        // Validar configuración SMTP
+        if (!$smtp_user || !$smtp_pass) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(500);
+
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'No se encuentran configuradas las credenciales SMTP.'
+            ]);
+            exit;
+        }
 
         $total = count($proveedores);
         $enviados = 0;
@@ -551,7 +551,8 @@ switch ($_GET['op']) {
         $tempDir = realpath(__DIR__ . '/../public/temp');
         if (!$tempDir) {
             $tempDir = __DIR__ . '/../public/temp';
-            if (!is_dir($tempDir)) mkdir($tempDir, 0777, true);
+            if (!is_dir($tempDir))
+                mkdir($tempDir, 0777, true);
         }
 
         // --- Envío en lotes de 5 ---
@@ -559,8 +560,8 @@ switch ($_GET['op']) {
 
         foreach ($chunks as $lote) {
             foreach ($lote as $prov) {
-
-                if (empty($prov['email'])) continue;
+                if (empty($prov['email']))
+                    continue;
 
                 $emails = explode(';', $prov['email']);
                 $emailPrincipal = trim($emails[0]);
@@ -592,9 +593,9 @@ switch ($_GET['op']) {
 
                     // Desactivar verificación SSL en localhost
                     $context = stream_context_create([
-                        "ssl" => [
-                            "verify_peer" => false,
-                            "verify_peer_name" => false,
+                        'ssl' => [
+                            'verify_peer' => false,
+                            'verify_peer_name' => false,
                         ]
                     ]);
 
@@ -609,7 +610,7 @@ switch ($_GET['op']) {
                         ],
                         [
                             "<a href='{$link_pdf}' target='_blank' style='color:#009ba9;font-weight:bold;'>Ver Evaluación</a>",
-                            "Estimado(a): <strong>" . htmlspecialchars($prov['razon_social'], ENT_QUOTES, 'UTF-8') . "</strong>"
+                            'Estimado(a): <strong>' . htmlspecialchars($prov['razon_social'], ENT_QUOTES, 'UTF-8') . '</strong>'
                         ],
                         $templateContent
                     );
@@ -630,7 +631,8 @@ switch ($_GET['op']) {
                         $evaluaciones->actualizarEstadoDetalle($codi_eval, $prov['nit'], 2);
                     }
 
-                    if (file_exists($rutaPDF)) unlink($rutaPDF);
+                    if (file_exists($rutaPDF))
+                        unlink($rutaPDF);
                 } catch (Exception $e) {
                     error_log("Error al enviar correo a {$emailPrincipal}: {$mail->ErrorInfo}");
                 }
@@ -643,7 +645,6 @@ switch ($_GET['op']) {
             'status' => 'success',
             'message' => "Se enviaron {$enviados} correos correctamente de un total de {$total}."
         ]);
-
 
         break;
 }
