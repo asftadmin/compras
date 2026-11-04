@@ -3,7 +3,8 @@
 require_once ('../config/conexion.php');
 require_once ('../models/Evaluacion.php');
 require_once ('curl.php');
-require '../vendor/autoload.php';
+// Cargar dependencias Composer
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -640,6 +641,15 @@ switch ($_GET['op']) {
 
             sleep(5);
         }
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        /*         echo json_encode([
+                    'status' => ($enviados === $total) ? 'success' : 'error',
+                    'message' => "Se enviaron {$enviados} correos correctamente de un total de {$total}.",
+                    'enviados' => $enviados,
+                    'total' => $total
+                ]); */
 
         echo json_encode([
             'status' => 'success',

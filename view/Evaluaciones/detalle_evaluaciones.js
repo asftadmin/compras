@@ -614,23 +614,51 @@ $('#btnEnviar').on('click', function () {
     $.ajax({
         url: '../../controller/Evaluacion.php?op=enviarCorreos',
         type: 'POST',
+        dataType: 'json',
         data: {
             codi_eval: codi_eval,
             proveedores: JSON.stringify(proveedoresSeleccionados)
         },
-        success: function (response) {
+        success: function (res) {
+
             Swal.close();
-            const res = JSON.parse(response);
+
             if (res.status === 'success') {
-                Swal.fire('Correcto', res.message, 'success');
-                $('#ev_enviar_data').DataTable().ajax.reload();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Envío realizado',
+                    text: res.message,
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#28a745'
+                }).then(() => {
+                    $('#ev_enviar_data').DataTable().ajax.reload(null, false);
+                });
+
             } else {
-                Swal.fire('Error', res.message, 'error');
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error en el envío',
+                    text: res.message || 'No se pudieron enviar los correos.',
+                    confirmButtonText: 'Aceptar'
+                });
+
             }
         },
-        error: function () {
+        error: function (xhr, status, error) {
+
             Swal.close();
-            Swal.fire('Error', 'No se pudo completar el envío.', 'error');
+
+            console.error('Error AJAX:', status, error);
+            console.error('Respuesta servidor:', xhr.responseText);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de comunicación',
+                text: 'No se pudo completar la solicitud de envío.',
+                confirmButtonText: 'Aceptar'
+            });
         }
     });
 });
