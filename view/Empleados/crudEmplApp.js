@@ -24,52 +24,55 @@ function guardaryeditar(e){
     e.preventDefault();
     let formData = new FormData($("#Emplapp_form")[0]);
 
-    /* URL DEL CONTROLADOR OP INSERT - ROL */
-    swal({
+    Swal.fire({
         title: "Confirmar Datos",
-        text: "¿Deseas guardar Cambios?",
-        type: "info",
+        text: "¿Deseas guardar cambios?",
+        icon: "info",
         showCancelButton: true,
-        confirmButtonClass: "btn-primary",
+        customClass: { confirmButton: "btn btn-primary", cancelButton: "btn btn-secondary" },
         confirmButtonText: "Sí",
-        cancelButtonText: "No",
-        closeOnConfirm: false,
-        
-    },
-    function (isConfirm) {
-        if (isConfirm) {
-    $.ajax({
-        url: "../../controller/Empleado.php?op=guardaryeditarEmpleado",
-        type: "POST",
-        data: formData,
-        contentType: false,
-        processData: false,
-        success: function(datos) {
-            var data = JSON.parse(datos);
-            $('#Emplapp_form')[0].reset();
-            $('#modalemplapp').modal('hide');
-            
-            $('#app_data').DataTable().ajax.reload();
+        cancelButtonText: "No"
+    }).then(function (result) {
+        if (!result.isConfirmed) {
+            return;
+        }
 
-            if (data.status.trim().toLowerCase() === "error") {
-                swal({
-                    title: "Error",
-                    text: data.message,
-                    type: "error",
-                    confirmButtonClass: "btn-danger",
-                });
-            } else {
-                swal({
+        $.ajax({
+            url: "../../controller/Empleado.php?op=guardaryeditarEmpleado",
+            type: "POST",
+            data: formData,
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            success: function(data) {
+                if (data.status.trim().toLowerCase() === "error") {
+                    Swal.fire({
+                        title: "Error",
+                        text: data.message,
+                        icon: "error",
+                        customClass: { confirmButton: "btn btn-danger" }
+                    });
+                    return;
+                }
+
+                $('#Emplapp_form')[0].reset();
+                $('#modalemplapp').modal('hide');
+                $('#app_data').DataTable().ajax.reload();
+                Swal.fire({
                     title: "Correcto",
                     text: data.message,
-                    type: "success",
-                    confirmButtonClass: "btn-success",
+                    icon: "success",
+                    customClass: { confirmButton: "btn btn-success" }
+                });
+            },
+            error: function() {
+                Swal.fire({
+                    title: "Error",
+                    text: "No se pudieron guardar los datos. Intenta nuevamente.",
+                    icon: "error"
                 });
             }
-        }
         });
-    }
-      
     });
 }
 
@@ -170,45 +173,38 @@ function clave(user_id){
     $('#modalclave').modal('show');
 }
 
-function eliminar(user_id){
-        swal({
-            title:"Eliminar Usuario",
-            text: "Estas seguro de eliminar el usuario?",
-            type: "error",
-            showCancelButton: true,
-            confirmButtonClass: "btn-danger",
-            confirmButtonText: "Si",
-            cancelButtonText: "No",
-            closeOnConfirm:false,
-        },
-        
-        function(isConfirm){
-            if(isConfirm){
-        
-            $.post("../../controller/usuario.php?op=eliminarUsuario", { user_id : user_id}, function(data) { 
+function eliminar(empl_id){
+    Swal.fire({
+        title: "Eliminar Empleado",
+        text: "¿Estás seguro de eliminar el empleado?",
+        icon: "warning",
+        showCancelButton: true,
+        customClass: { confirmButton: "btn btn-danger", cancelButton: "btn btn-secondary" },
+        confirmButtonText: "Sí",
+        cancelButtonText: "No"
+    }).then(function(result) {
+        if (!result.isConfirmed) {
+            return;
+        }
 
-            }); 
-            /*Recargamos el data table*/
-            $('#user_data').DataTable().ajax.reload();
-
-            swal({
-                title: "Eliminar Usuario",
-                text: "Registro Eliminado",
-                type: "success",
-                confirmButtonClass: "btn btn-success"
-            });
-
-            }else{
-                swal({
-                    title: "Eliminar Usuario",
-                    text: "No se elimino el registro",
-                    type: "error",
-                    confirmButtonClass: "btn btn-danger"
+        $.post("../../controller/Empleado.php?op=eliminarEmpleado", { empl_id: empl_id })
+            .done(function() {
+                $('#app_data').DataTable().ajax.reload();
+                Swal.fire({
+                    title: "Eliminar Empleado",
+                    text: "Registro eliminado",
+                    icon: "success",
+                    customClass: { confirmButton: "btn btn-success" }
                 });
-            }
-        });
-
+            })
+            .fail(function() {
+                Swal.fire({
+                    title: "Error",
+                    text: "No se pudo eliminar el empleado. Intenta nuevamente.",
+                    icon: "error"
+                });
+            });
+    });
 }
-    
 
 init();

@@ -27,7 +27,7 @@
                     </div>
                     <div class="form-group">
                       <label for="empl_email">Correo electronico:<sup>*</sup></label>
-                      <input type="email" class="form-control mt-2" name="empl_email" id="empl_email" maxlength="50" minlength="5" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" placeholder="Digite el correo electronico"  required>
+                      <input type="email" class="form-control mt-2" name="empl_email" id="empl_email" maxlength="50" minlength="5" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" placeholder="Digite el correo electronico"  required>
                     </div>
                     <div class="form-group">
                       <label for="empl_direccion">Direccion:<sup>*</sup></label>

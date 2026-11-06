@@ -112,18 +112,27 @@ $(document).on('click', '.btn-guardar-empleado', function () {
         direccion: datos[6]
     };
 
-    let empleadosBD = [];
-
     $.ajax({
         url: '../../controller/Empleado.php?op=guardarEmpleadoNuevo',
         type: 'POST',
         data: payload,
+        dataType: 'json',
         success: function (response) {
-            swal({
+            if (!response || response.success !== true) {
+                Swal.fire({
+                    title: "Error",
+                    text: "No se pudo guardar el empleado",
+                    icon: "error",
+                    customClass: { confirmButton: "btn btn-danger" }
+                });
+                return;
+            }
+
+            Swal.fire({
                 title: "Correcto",
                 text: "Empleado Registrado",
-                type: "success",
-                confirmButtonClass: "btn-success",
+                icon: "success",
+                customClass: { confirmButton: "btn btn-success" }
             });
             const table = $('#empleados_data_siesa').DataTable();
             const rowIndex = table.row(fila).index();
@@ -134,11 +143,11 @@ $(document).on('click', '.btn-guardar-empleado', function () {
             table.row(rowIndex).data(datos).invalidate().draw(false);
         },
         error: function () {
-            swal({
+            Swal.fire({
                 title: "Error",
                 text: "No se pudo guardar el empleado",
-                type: "error",
-                confirmButtonClass: "btn-danger",
+                icon: "error",
+                customClass: { confirmButton: "btn btn-danger" }
             });
         }
     });

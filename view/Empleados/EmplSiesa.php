@@ -1,6 +1,7 @@
 <?php
 require_once "../../config/conexion.php";
 if (isset($_SESSION["user_id"])) {
+    header('Cache-Control: no-store');
 ?>
     <!DOCTYPE html>
     <html lang="es">
@@ -81,7 +82,7 @@ if (isset($_SESSION["user_id"])) {
         </div>
 
         <?php require_once("../MainJS/JS.php") ?>
-        <script type="text/javascript" src="crudEmplSiesa.js"></script>
+        <script type="text/javascript" src="crudEmplSiesa.js?v=<?php echo filemtime(__DIR__ . '/crudEmplSiesa.js'); ?>"></script>
     </body>
 
     </html>

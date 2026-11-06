@@ -32,53 +32,56 @@ function guardaryeditar(e) {
   e.preventDefault();
   let formData = new FormData($("#usuarios_form")[0]);
 
-  /* URL DEL CONTROLADOR OP INSERT - ROL */
-  swal(
-    {
-      title: "Confirmar Datos",
-      text: "¿Deseas guardar Cambios?",
-      type: "info",
-      showCancelButton: true,
-      confirmButtonClass: "btn-primary",
-      confirmButtonText: "Sí",
-      cancelButtonText: "No",
-      closeOnConfirm: false,
-    },
-    function (isConfirm) {
-      if (isConfirm) {
-        $.ajax({
-          url: "../../controller/Usuario.php?op=guardaryeditarUsuario",
-          type: "POST",
-          data: formData,
-          contentType: false,
-          processData: false,
-          success: function (datos) {
-            var data = JSON.parse(datos);
-            $("#usuarios_form")[0].reset();
-            $("#modalusuario").modal("hide");
+  Swal.fire({
+    title: "Confirmar Datos",
+    text: "¿Deseas guardar cambios?",
+    icon: "info",
+    showCancelButton: true,
+    customClass: { confirmButton: "btn btn-primary", cancelButton: "btn btn-secondary" },
+    confirmButtonText: "Sí",
+    cancelButtonText: "No"
+  }).then(function (result) {
+    if (!result.isConfirmed) {
+      return;
+    }
 
-            $("#user_data").DataTable().ajax.reload();
+    $.ajax({
+      url: "../../controller/Usuario.php?op=guardaryeditarUsuario",
+      type: "POST",
+      data: formData,
+      dataType: "json",
+      contentType: false,
+      processData: false,
+      success: function (data) {
+        if (data.status.trim().toLowerCase() === "error") {
+          Swal.fire({
+            title: "Error",
+            text: data.message,
+            icon: "error",
+            customClass: { confirmButton: "btn btn-danger" }
+          });
+          return;
+        }
 
-            if (data.status.trim().toLowerCase() === "error") {
-              swal({
-                title: "Error",
-                text: data.message,
-                type: "error",
-                confirmButtonClass: "btn-danger",
-              });
-            } else {
-              swal({
-                title: "Correcto",
-                text: data.message,
-                type: "success",
-                confirmButtonClass: "btn-success",
-              });
-            }
-          },
+        $("#usuarios_form")[0].reset();
+        $("#modalusuario").modal("hide");
+        $("#user_data").DataTable().ajax.reload();
+        Swal.fire({
+          title: "Correcto",
+          text: data.message,
+          icon: "success",
+          customClass: { confirmButton: "btn btn-success" }
+        });
+      },
+      error: function () {
+        Swal.fire({
+          title: "Error",
+          text: "No se pudieron guardar los datos. Intenta nuevamente.",
+          icon: "error"
         });
       }
-    }
-  );
+    });
+  });
 }
 
 $(document).ready(function () {
